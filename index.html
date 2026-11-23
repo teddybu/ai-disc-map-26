@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Discourse Map 2026</title>
+<style>
+  :root {
+    --bg: #fafaf8;
+    --panel-bg: #ffffff;
+    --border: #e2e2de;
+    --text: #1a1a1a;
+    --muted: #666666;
+    --accent: #333333;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-bg);
+  }
+  header h1 {
+    margin: 0 0 4px 0;
+    font-size: 20px;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+  #controls {
+    width: 300px;
+    flex-shrink: 0;
+    padding: 18px;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+  #controls h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: 18px 0 8px 0;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+  #controls h2:first-of-type { margin-top: 0; border-top: none; padding-top: 0; }
+  .preset-buttons { display: flex; gap: 8px; margin-bottom: 4px; }
+  button.preset {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    background: #f2f2ef;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button.preset:hover { background: #e9e9e5; }
+  label.toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    margin: 6px 0;
+    cursor: pointer;
+  }
+  label.toggle-row input[type="checkbox"] { accent-color: var(--accent); }
+  .swatch {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .slider-row { margin: 10px 0; }
+  .slider-row label { font-size: 12.5px; display: block; margin-bottom: 4px; color: var(--muted); }
+  .slider-row input[type="range"] { width: 100%; }
+  #plot-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+    overflow: auto;
+  }
+  #plot-svg {
+    background: var(--bg);
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+  }
+  .export-row { display: flex; gap: 8px; margin-top: 14px; }
+  .export-row button {
+    flex: 1;
+    padding: 8px;
+    font-size: 12.5px;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+  }
+  .export-row button:hover { opacity: 0.85; }
+  .hint {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+  svg text { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; }
+
+  @media (max-width: 849px) {
+    body { height: auto; overflow: auto; }
+    .layout { flex-direction: column; }
+    #controls {
+      width: 100%;
+      border-right: none;
+      border-top: 1px solid var(--border);
+      order: 2;
+    }
+    #plot-wrap {
+      order: 1;
+      justify-content: center;
+      padding: 12px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <div id="controls">
+
+    <h2>Presets</h2>
+    <div class="preset-buttons">
+      <button class="preset" id="preset-full">Full</button>
+      <button class="preset" id="preset-simple">Simplified</button>
+      <button class="preset" id="preset-minimal">Minimal</button>
+    </div>
+
+    <h2>Show Clusters / Groups</h2>
+    <div id="group-toggles"></div>
+
+    <h2>Display Elements</h2>
+    <label class="toggle-row"><input type="checkbox" id="toggle-hulls" checked> Cluster Hulls</label>
+    <label class="toggle-row"><input type="checkbox" id="toggle-titles" checked> Cluster Titles</label>
+    <label class="toggle-row"><input type="checkbox" id="toggle-names" checked> Point Labels</label>
+    <label class="toggle-row"><input type="checkbox" id="toggle-points" checked> Points (Markers)</label>
+    <label class="toggle-row"><input type="checkbox" id="toggle-legend"> Legend</label>
+    <label class="toggle-row"><input type="checkbox" id="toggle-axislabels" checked> Axis Labels (Optimism / Present Harms …)</label>
+    <label class="toggle-row"><input type="checkbox" id="toggle-header" checked> Title &amp; Subtitle</label>
+    <label class="toggle-row"><input type="checkbox" id="toggle-grid" checked> Background Grid</label>
+
+    <h2>Fine-Tuning</h2>
+    <div class="slider-row">
+      <label>Point Size: <span id="val-pointsize">6</span></label>
+      <input type="range" id="slider-pointsize" min="2" max="12" step="0.5" value="6">
+    </div>
+    <div class="slider-row">
+      <label>Hull Transparency: <span id="val-hullalpha">15</span>%</label>
+      <input type="range" id="slider-hullalpha" min="0" max="60" step="1" value="15">
+    </div>
+    <div class="slider-row">
+      <label>Hull Size: <span id="val-hullsize">100</span>%</label>
+      <input type="range" id="slider-hullsize" min="50" max="500" step="5" value="100">
+    </div>
+    <div class="slider-row">
+      <label>Hull Blur: <span id="val-hullblur">8</span>px</label>
+      <input type="range" id="slider-hullblur" min="0" max="30" step="1" value="8">
+    </div>
+    <div class="slider-row">
+      <label>Hull Organic (Wobble): <span id="val-hullwobble">28</span>%</label>
+      <input type="range" id="slider-hullwobble" min="0" max="60" step="1" value="28">
+    </div>
+    <div class="slider-row">
+      <label>Label Font Size: <span id="val-fontsize">12</span></label>
+      <input type="range" id="slider-fontsize" min="8" max="20" step="1" value="12">
+    </div>
+
+    <div class="export-row">
+      <button id="btn-export-svg">Export as SVG</button>
+    </div>
+    <div class="export-row">
+      <button id="btn-export-csv">Export as CSV</button>
+    </div>
+    <input type="file" id="file-csv" accept=".csv" style="display:none">
+    		<!-- CC-Lizenzhinweis -->
+    <div class="cc-notice" aria-label="License notice">
+      <small>
+        <span>
+          <strong>AI Discourse Map 2026</strong> by
+          <a href="https://bjoern.burkhard.online" target="_blank" rel="noopener">Björn Burkhard</a>
+          is licensed under
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">
+            CC BY 4.0
+          </a>
+          <img src="https://licensebuttons.net/l/by/4.0/80x15.png" alt="Creative Commons BY 4.0" style="vertical-align:middle;margin-left:6px;height:15px;">
+        </span>
+      </small>
+    </div>
+  </div>
+
+  <div id="plot-wrap">
+    <svg id="plot-svg" viewBox="0 0 1000 720" width="1000" height="720"></svg>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// CSV-Parser
+// ---------------------------------------------------------------
+function parseCSV(text) {
+  const lines = text.trim().split("\n");
+  const headers = lines[0].split(",");
+  return lines.slice(1).map(line => {
+    const cols = line.split(",");
+    const obj = {};
+    headers.forEach((h, i) => {
+      // Letztes Feld (url) kann Kommas enthalten → Rest zusammenfügen
+      obj[h.trim()] = (i === headers.length - 1
+        ? cols.slice(i).join(",")
+        : cols[i] ?? ""
+      ).trim();
+    });
+    obj.x = parseFloat(obj.x);
+    obj.y = parseFloat(obj.y);
+    return obj;
+  });
+}
+
+let dataRows = [];
+
+// Legenden-Gruppen -> Wikipedia-Artikel zum jeweiligen Konzept
+const LEGEND_URLS = {
+  "AGI": "https://en.wikipedia.org/wiki/Artificial_general_intelligence",
+  "X-Risk": "https://en.wikipedia.org/wiki/Existential_risk_from_artificial_intelligence",
+  "Governance": "https://en.wikipedia.org/wiki/Regulation_of_artificial_intelligence",
+  "Present Harms": "https://en.wikipedia.org/wiki/Algorithmic_bias",
+  "Sovereign AI": "https://en.wikipedia.org/wiki/AI_nationalism",
+  "Agentic AI": "https://en.wikipedia.org/wiki/Agentic_AI",
+  "AI for Science": "https://en.wikipedia.org/wiki/Artificial_intelligence_in_science",
+};
+
+const COLORS = {
+  "AGI": "#6C8EE8",
+  "X-Risk": "#E8746C",
+  "Governance": "#5FC29A",
+  "Present Harms": "#F0A857",
+  "Sovereign AI": "#8E6CC2",
+  "Agentic AI": "#C25FA8",
+  "AI for Science": "#4DBFBF",
+};
+
+const CLUSTER_TITLES = {
+  "AGI Transformation": [-0.62, 0.98],
+  "Agentic AI": [-0.05, 0.62],
+  "Existential Risk": [-0.45, -0.40],
+  "Present Harms": [0.78, -0.35],
+  "Governance Core": [0.60, -0.20],
+  "Sovereign AI": [-0.05, 0.20],
+  "AI for Science": [0.13, 0.94],
+};
+
+const LABEL_OFFSETS = {
+  "Operator (OpenAI)": [-7, 4, "end"],
+  "Computer Use (Claude)": [14, 5, "start"],
+  "Devin (Cognition)": [12, 5, "start"],
+  "Amodei": [-8, 8, "end"],
+  "Altman": [-8, 8, "end"],
+  "Mistral": [-15, 5, "end"],
+  "Bengio": [-8, -14, "end"],
+  "G42": [8, -12, "start"],
+  "BharatGen": [8, 0, "start"],
+  "Intl Safety Report": [8, 8, "start"],
+  "OECD": [-8, 4, "end"],
+  "Gebru": [-8, -8, "end"],
+  "Whittaker": [9, 0, "start"],
+  "Zuboff": [-9, 7, "end"],
+  "Bender": [-8, 10, "end"],
+  "Hassabis": [-8, 10, "end"],
+  "Baker": [8, 10, "start"],
+  "Klein": [0, -7, "end"],
+};
+
+// ---------------------------------------------------------------
+// State
+// ---------------------------------------------------------------
+const state = {
+  visibleGroups: new Set(Object.keys(COLORS)),
+  showHulls: true,
+  showTitles: true,
+  showNames: true,
+  showPoints: true,
+  showLegend: false,
+  showAxisLabels: true,
+  showHeader: true,
+  showGrid: true,
+  pointSize: 6,
+  hullAlpha: 0.15,
+  hullScale: 2.6,
+  hullBlur: 0,
+  hullWobble: 0,
+  fontSize: 13,
+};
+
+// ---------------------------------------------------------------
+// Coordinate mapping: data space [-1.15, 1.15] -> svg space
+// ---------------------------------------------------------------
+const W = 1000, H = 720;
+const PAD = 70;
+const PLOT_W = W - PAD * 2;
+const PLOT_H = H - PAD * 2 - 40; // extra room for header
+const DOMAIN = 1.15;
+
+function sx(x) { return PAD + (x + DOMAIN) / (DOMAIN * 2) * PLOT_W; }
+function sy(y) { return (PAD + 40) + (1 - (y + DOMAIN) / (DOMAIN * 2)) * PLOT_H; }
+
+const svgns = "http://www.w3.org/2000/svg";
+function el(tag, attrs = {}, children = []) {
+  const e = document.createElementNS(svgns, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === null || v === undefined) continue;
+    e.setAttribute(k, v);
+  }
+  for (const c of children) e.appendChild(c);
+  return e;
+}
+
+// ---------------------------------------------------------------
+// Organische Blob-Form: seedbasierter Pseudo-Zufall (deterministisch pro
+// Cluster-Name), damit die Form bei jedem Render gleich bleibt.
+// ---------------------------------------------------------------
+function seededRandom(seedStr) {
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+  return function () {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return (seed >>> 8) / 16777216;
+  };
+}
+
+// Catmull-Rom -> kubische Bezier-Segmente für einen geschlossenen Pfad
+function catmullRomClosedPath(points) {
+  const n = points.length;
+  if (n < 3) return "";
+  let d = `M ${points[0][0]},${points[0][1]} `;
+  for (let i = 0; i < n; i++) {
+    const p0 = points[(i - 1 + n) % n];
+    const p1 = points[i];
+    const p2 = points[(i + 1) % n];
+    const p3 = points[(i + 2) % n];
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += `C ${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]} `;
+  }
+  return d + "Z";
+}
+
+// Erzeugt einen organischen "Blob"-Pfad, der die tatsächlichen Punkt-
+// Positionen (screenPts, in SVG-Koordinaten) garantiert umschließt.
+// Fuer jeden der `pointsCount` Winkel-Sektoren wird ein "sicherer"
+// Mindestradius berechnet (requiredRadii): der groesste Abstand + Margin
+// eines Punkts, der in diesem oder einem direkt benachbarten Sektor
+// liegt (floor/ceil-Nachbarn, weil der tatsaechliche Punktwinkel selten
+// exakt auf einem Sample-Winkel liegt). Das seedbasierte Wobble darf
+// den Radius danach nur noch NACH OBEN variieren, nie unter den
+// sicheren Mindestwert - so bleibt jeder Marker garantiert innerhalb
+// der Huelle, auch bei starkem Wobble/Blur.
+function organicBlobPath(cx, cy, screenPts, seed, wobble = 0.28, margin = 26, pointsCount = 36) {
+  const rnd = seededRandom(seed);
+  const twoPi = Math.PI * 2;
+
+  const requiredRadii = new Array(pointsCount).fill(0);
+  for (const [px, py] of screenPts) {
+    const dx = px - cx, dy = py - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy) + margin;
+    let angle = Math.atan2(dy, dx);
+    if (angle < 0) angle += twoPi;
+    const rawIdx = (angle / twoPi) * pointsCount;
+    const idxA = Math.floor(rawIdx) % pointsCount;
+    const idxB = Math.ceil(rawIdx) % pointsCount;
+    if (dist > requiredRadii[idxA]) requiredRadii[idxA] = dist;
+    if (dist > requiredRadii[idxB]) requiredRadii[idxB] = dist;
+  }
+  const baseRadii = requiredRadii.map(r => Math.max(r, margin));
+
+  // Weiche, organische Grundform (mehrfach geglaettet ueber Nachbarn)
+  const smoothed = baseRadii.map((r, i) => {
+    const prev2 = baseRadii[(i - 2 + pointsCount) % pointsCount];
+    const prev1 = baseRadii[(i - 1 + pointsCount) % pointsCount];
+    const next1 = baseRadii[(i + 1) % pointsCount];
+    const next2 = baseRadii[(i + 2) % pointsCount];
+    return (prev2 + prev1 * 2 + r * 3 + next1 * 2 + next2) / 9;
+  });
+
+  const pts = [];
+  for (let i = 0; i < pointsCount; i++) {
+    const angle = (i / pointsCount) * twoPi;
+    // Wobble vergroessert den Radius nur (0..+wobble), senkt ihn aber nie
+    // unter den fuer diesen Sektor erforderlichen Mindestwert.
+    const wob = 1 + rnd() * wobble;
+    const r = Math.max(smoothed[i] * wob, requiredRadii[i]);
+    pts.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
+  }
+  return catmullRomClosedPath(pts);
+}
+
+function render() {
+  const svg = document.getElementById("plot-svg");
+  svg.innerHTML = "";
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  // background
+  svg.appendChild(el("rect", { x: 0, y: 0, width: W, height: H, fill: "#fafaf8" }));
+
+  // blur filter definition (Staerke ueber Regler steuerbar)
+  const defs = el("defs");
+  const filter = el("filter", { id: "hull-blur", x: "-50%", y: "-50%", width: "200%", height: "200%" });
+  filter.appendChild(el("feGaussianBlur", { stdDeviation: state.hullBlur }));
+  defs.appendChild(filter);
+  svg.appendChild(defs);
+
+  const visibleRows = dataRows.filter(r => state.visibleGroups.has(r.legend));
+
+  // grid
+  if (state.showGrid) {
+    const g = el("g", { stroke: "#dddddd", "stroke-width": 0.6 });
+    for (let i = -1; i <= 1; i += 0.25) {
+      g.appendChild(el("line", { x1: sx(i), y1: sy(-DOMAIN), x2: sx(i), y2: sy(DOMAIN) }));
+      g.appendChild(el("line", { x1: sx(-DOMAIN), y1: sy(i), x2: sx(DOMAIN), y2: sy(i) }));
+    }
+    svg.appendChild(g);
+  }
+
+  // cluster hulls (organische, geblurte Blob-Formen)
+  if (state.showHulls) {
+    const groupsByLabel = {};
+    for (const r of visibleRows) {
+      (groupsByLabel[r.group] = groupsByLabel[r.group] || []).push(r);
+    }
+    const hullGroup = el("g", { filter: state.hullBlur > 0 ? "url(#hull-blur)" : null });
+    for (const [groupLabel, pts] of Object.entries(groupsByLabel)) {
+      if (pts.length === 0) continue;
+      const color = COLORS[pts[0].legend] || "#999999";
+      const screenPts = pts.map(p => [sx(p.x), sy(p.y)]);
+      const cx = screenPts.reduce((a, p) => a + p[0], 0) / screenPts.length;
+      const cy = screenPts.reduce((a, p) => a + p[1], 0) / screenPts.length;
+      // Basis-Margin um jeden Marker herum, skaliert mit Punktgröße & Hüllen-Größe
+      const margin = (state.pointSize + 18) * state.hullScale;
+      const path = organicBlobPath(cx, cy, screenPts, groupLabel, state.hullWobble, margin);
+      hullGroup.appendChild(el("path", {
+        d: path,
+        fill: color, "fill-opacity": state.hullAlpha,
+        stroke: "none", "stroke-width": 0, "stroke-opacity": 0,
+      }));
+    }
+    svg.appendChild(hullGroup);
+  }
+
+  // axes
+  svg.appendChild(el("line", { x1: sx(-DOMAIN), y1: sy(0), x2: sx(DOMAIN), y2: sy(0), stroke: "#0002", "stroke-width": 1.4 }));
+  svg.appendChild(el("line", { x1: sx(0), y1: sy(-DOMAIN), x2: sx(0), y2: sy(DOMAIN), stroke: "#0002", "stroke-width": 1.4 }));
+
+  // cluster titles
+  if (state.showTitles) {
+    for (const [title, [tx, ty]] of Object.entries(CLUSTER_TITLES)) {
+      const hasVisiblePoint = visibleRows.some(r => r.group === title);
+      if (!hasVisiblePoint) continue;
+      const t = el("text", {
+        x: sx(tx), y: sy(ty), "text-anchor": "middle", "font-weight": "bold",
+        "font-size": 14.5, fill: "#333333",
+      });
+      t.textContent = title;
+      svg.appendChild(t);
+    }
+  }
+
+  // points + labels (jeweils klickbar via <a>-Link zum Wikipedia-Artikel,
+  // falls in den Daten hinterlegt)
+  const placedLabels = []; // [x, y, estWidth] — für Overlap-Vermeidung
+  for (const r of visibleRows) {
+    const color = COLORS[r.legend] || "#333333";
+    const px = sx(r.x), py = sy(r.y);
+
+    const linkWrap = (node) => {
+      if (!r.url) return node;
+      const a = el("a", { href: r.url, target: "_blank", rel: "noopener noreferrer" });
+      a.style.cursor = "pointer";
+      a.appendChild(node);
+      const titleEl = document.createElementNS(svgns, "title");
+      titleEl.textContent = `${r.name} — Open Wikipedia`;
+      node.appendChild(titleEl);
+      return a;
+    };
+
+    if (state.showPoints) {
+      const circle = el("circle", {
+        cx: px, cy: py, r: state.pointSize,
+        fill: color, stroke: "white", "stroke-width": 1,
+      });
+      svg.appendChild(linkWrap(circle));
+    }
+    if (state.showNames) {
+      const manualOffset = LABEL_OFFSETS[r.name];
+      const [dx, dy, anchor] = manualOffset || [9, 5, "start"];
+      let lx = px + dx, ly = py + dy;
+      const labelLen = r.name.length;
+      const estWidth = labelLen * state.fontSize * 0.6;
+      const minDistY = state.fontSize + 2;
+      const minDistX = Math.max(60, estWidth + 8);
+      // Manuell in LABEL_OFFSETS gesetzte Labels werden 1:1 an der
+      // gewünschten Position gerendert — keine automatische
+      // Kollisions-Verschiebung, damit Fein-Tuning exakt wirkt.
+      if (!manualOffset) {
+        let tries = 0;
+        let found = false;
+        let spiralStep = 0;
+        let spiralDir = 1;
+        while (tries < 24) {
+          found = !placedLabels.some(pos => {
+            const adx = Math.abs(lx - pos[0]);
+            const ady = Math.abs(ly - pos[1]);
+            const minX = (estWidth + (pos[2]||0)) / 2 + 6;
+            return adx < minX && ady < minDistY;
+          });
+          if (found) break;
+          if (tries % 2 === 0) { spiralStep++; spiralDir *= -1; }
+          if (tries % 4 < 2) {
+            ly = py + dy + spiralDir * spiralStep * minDistY;
+            ly = Math.max(py - 40, Math.min(py + 40, ly));
+          } else {
+            lx = px + dx + spiralDir * spiralStep * minDistX * 0.7;
+            lx = Math.max(px - 80, Math.min(px + 80, lx));
+          }
+          tries++;
+        }
+      }
+      placedLabels.push([lx, ly, estWidth]);
+      const label = el("text", {
+        x: lx, y: ly, "text-anchor": anchor,
+        "font-size": state.fontSize, fill: "#1a1a1a",
+        "text-decoration": "none",
+      });
+      label.textContent = r.name;
+      svg.appendChild(linkWrap(label));
+    }
+  }
+
+  // axis end labels
+  if (state.showAxisLabels) {
+    const mk = (x, y, text, anchor) => {
+      const g = el("g");
+      const t = el("text", { x, y, "text-anchor": anchor, "font-size": 13, "font-weight": "bold", fill: "#333333" });
+      t.textContent = text;
+      g.appendChild(t);
+      svg.appendChild(g);
+      // background box (approx)
+      const bbox = t.getBBox ? null : null;
+    };
+    mk(W/2, sy(DOMAIN) - 14, "Optimism", "middle");
+    mk(W/2, sy(-DOMAIN) + 24, "Pessimism", "middle");
+
+    const left = el("text", { x: sx(-DOMAIN)+4, y: sy(0) + 15, "text-anchor": "start", "font-size": 12, "font-weight":"bold", fill: "#333333" });
+    left.textContent = "Existential Risk";
+    svg.appendChild(left);
+
+    const right = el("text", { x: sx(DOMAIN)-4, y: sy(0) + 15, "text-anchor": "end", "font-size": 12, "font-weight":"bold", fill: "#333333" });
+    right.textContent = "Present Harms";
+    svg.appendChild(right);
+
+    const bottom = el("text", { x: W/2, y: H - 14, "text-anchor": "middle", "font-size": 12, fill: "#333333" });
+    svg.appendChild(bottom);
+  }
+
+  // header
+  if (state.showHeader) {
+    const title = el("text", { x: W/2, y: 30, "text-anchor": "middle", "font-size": 21, "font-weight": "bold", fill: "#1a1a1a" });
+    title.textContent = "AI Discourse Map 2026";
+    svg.appendChild(title);
+  }
+
+  // legend
+  if (state.showLegend) {
+    const lg = el("g", { transform: `translate(${PAD - 10}, ${PAD + 30})` });
+    lg.appendChild(el("rect", { x: -10, y: -22, width: 168, height: Object.keys(COLORS).length * 20 + 26, fill: "white", stroke: "#e2e2de", rx: 6 }));
+    const legTitle = el("text", { x: 0, y: -6, "font-size": 11.5, "font-weight": "bold", fill: "#666666" });
+    legTitle.textContent = "Legend";
+    lg.appendChild(legTitle);
+    let i = 0;
+    for (const [key, color] of Object.entries(COLORS)) {
+      const y = i * 20 + 14;
+      const active = state.visibleGroups.has(key);
+      const legendUrl = LEGEND_URLS[key];
+      lg.appendChild(el("circle", { cx: 4, cy: y - 4, r: 5, fill: active ? color : "#cccccc" }));
+      const t = el("text", {
+        x: 16, y, "font-size": 12, fill: active ? "#1a1a1a" : "#aaaaaa",
+        "text-decoration": "none",
+      });
+      t.textContent = key;
+      if (active && legendUrl) {
+        const a = el("a", { href: legendUrl, target: "_blank", rel: "noopener noreferrer" });
+        a.style.cursor = "pointer";
+        const titleEl = document.createElementNS(svgns, "title");
+        titleEl.textContent = `${key} — Open Wikipedia`;
+        t.appendChild(titleEl);
+        a.appendChild(t);
+        lg.appendChild(a);
+      } else {
+        lg.appendChild(t);
+      }
+      i++;
+    }
+    svg.appendChild(lg);
+  }
+}
+
+// ---------------------------------------------------------------
+// Controls wiring
+// ---------------------------------------------------------------
+function buildGroupToggles() {
+  const container = document.getElementById("group-toggles");
+  container.innerHTML = "";
+  for (const [key, color] of Object.entries(COLORS)) {
+    const row = document.createElement("label");
+    row.className = "toggle-row";
+    row.innerHTML = `<input type="checkbox" checked data-group="${key}">
+      <span class="swatch" style="background:${color}"></span> ${key}`;
+    container.appendChild(row);
+  }
+  container.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const g = cb.getAttribute("data-group");
+      if (cb.checked) state.visibleGroups.add(g);
+      else state.visibleGroups.delete(g);
+      render();
+    });
+  });
+}
+
+document.getElementById("toggle-hulls").addEventListener("change", e => { state.showHulls = e.target.checked; render(); });
+document.getElementById("toggle-titles").addEventListener("change", e => { state.showTitles = e.target.checked; render(); });
+document.getElementById("toggle-names").addEventListener("change", e => { state.showNames = e.target.checked; render(); });
+document.getElementById("toggle-points").addEventListener("change", e => { state.showPoints = e.target.checked; render(); });
+document.getElementById("toggle-legend").addEventListener("change", e => { state.showLegend = e.target.checked; render(); });
+document.getElementById("toggle-axislabels").addEventListener("change", e => { state.showAxisLabels = e.target.checked; render(); });
+document.getElementById("toggle-header").addEventListener("change", e => { state.showHeader = e.target.checked; render(); });
+document.getElementById("toggle-grid").addEventListener("change", e => { state.showGrid = e.target.checked; render(); });
+
+document.getElementById("slider-pointsize").addEventListener("input", e => {
+  state.pointSize = parseFloat(e.target.value);
+  document.getElementById("val-pointsize").textContent = state.pointSize;
+  render();
+});
+document.getElementById("slider-hullalpha").addEventListener("input", e => {
+  state.hullAlpha = parseFloat(e.target.value) / 100;
+  document.getElementById("val-hullalpha").textContent = e.target.value;
+  render();
+});
+document.getElementById("slider-hullsize").addEventListener("input", e => {
+  state.hullScale = parseFloat(e.target.value) / 100;
+  document.getElementById("val-hullsize").textContent = e.target.value;
+  render();
+});
+document.getElementById("slider-hullblur").addEventListener("input", e => {
+  state.hullBlur = parseFloat(e.target.value);
+  document.getElementById("val-hullblur").textContent = e.target.value;
+  render();
+});
+document.getElementById("slider-hullwobble").addEventListener("input", e => {
+  state.hullWobble = parseFloat(e.target.value) / 100;
+  document.getElementById("val-hullwobble").textContent = e.target.value;
+  render();
+});
+document.getElementById("slider-fontsize").addEventListener("input", e => {
+  state.fontSize = parseFloat(e.target.value);
+  document.getElementById("val-fontsize").textContent = state.fontSize;
+  render();
+});
+
+function setAllGroupCheckboxes(checked) {
+  document.querySelectorAll("#group-toggles input[type=checkbox]").forEach(cb => {
+    cb.checked = checked;
+    const g = cb.getAttribute("data-group");
+    if (checked) state.visibleGroups.add(g); else state.visibleGroups.delete(g);
+  });
+}
+
+document.getElementById("preset-full").addEventListener("click", () => {
+  setAllGroupCheckboxes(true);
+  Object.assign(state, {
+    showHulls: true, showTitles: true, showNames: true, showPoints: true, showLegend: true,
+    showAxisLabels: true, showHeader: true, showGrid: true,
+  });
+  syncCheckboxesFromState();
+  render();
+});
+
+document.getElementById("preset-simple").addEventListener("click", () => {
+  setAllGroupCheckboxes(true);
+  Object.assign(state, {
+    showHulls: true, showTitles: true, showNames: false, showPoints: true, showLegend: true,
+    showAxisLabels: true, showHeader: true, showGrid: false,
+  });
+  syncCheckboxesFromState();
+  render();
+});
+
+document.getElementById("preset-minimal").addEventListener("click", () => {
+  setAllGroupCheckboxes(true);
+  Object.assign(state, {
+    showHulls: false, showTitles: false, showNames: false, showPoints: true, showLegend: false,
+    showAxisLabels: true, showHeader: false, showGrid: false,
+  });
+  syncCheckboxesFromState();
+  render();
+});
+
+function syncCheckboxesFromState() {
+  document.getElementById("toggle-hulls").checked = state.showHulls;
+  document.getElementById("toggle-titles").checked = state.showTitles;
+  document.getElementById("toggle-names").checked = state.showNames;
+  document.getElementById("toggle-points").checked = state.showPoints;
+  document.getElementById("toggle-legend").checked = state.showLegend;
+  document.getElementById("toggle-axislabels").checked = state.showAxisLabels;
+  document.getElementById("toggle-header").checked = state.showHeader;
+  document.getElementById("toggle-grid").checked = state.showGrid;
+}
+
+document.getElementById("btn-export-svg").addEventListener("click", () => {
+  const svg = document.getElementById("plot-svg");
+  const serializer = new XMLSerializer();
+  let source = serializer.serializeToString(svg);
+  if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+    source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ai-discourse-landscape-2026-custom.svg";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("btn-export-csv").addEventListener("click", () => {
+  const header = "name,meta,legend,x,y,group,url";
+  const rows = dataRows.map(r =>
+    [r.name, r.meta, r.legend, r.x, r.y, r.group, r.url || ""].join(",")
+  );
+  const csv = [header, ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ai-discourse-landscape-2026.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// initial
+fetch("data.csv")
+  .then(r => {
+    if (!r.ok) throw new Error(`data.csv not found (${r.status})`);
+    return r.text();
+  })
+  .then(text => {
+    dataRows = parseCSV(text);
+    buildGroupToggles();
+    render();
+  })
+  .catch(err => {
+    document.getElementById("plot-wrap").innerHTML =
+      `<p style="color:red;padding:20px">⚠️ Could not load data.csv — open via a local server, e.g. <code>npx serve .</code><br><small>${err}</small></p>`;
+  });
+</script>
+
+</body>
+</html>

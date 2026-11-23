@@ -1,0 +1,27 @@
+name,meta,legend,x,y,group,url
+Kurzweil,Pro,AGI,-0.75,0.92,AGI Transformation,https://en.wikipedia.org/wiki/Ray_Kurzweil
+e/acc,Pro,AGI,-0.68,0.85,AGI Transformation,https://en.wikipedia.org/wiki/Effective_accelerationism
+Andreessen,Pro,AGI,-0.62,0.78,AGI Transformation,https://en.wikipedia.org/wiki/Marc_Andreessen
+Altman,Pro,AGI,-0.35,0.68,Agentic AI,https://en.wikipedia.org/wiki/Sam_Altman
+Amodei,Pro,AGI,-0.30,0.55,Agentic AI,https://en.wikipedia.org/wiki/Dario_Amodei
+Operator (OpenAI),Pro,Agentic AI,-0.24,0.44,Agentic AI,https://en.wikipedia.org/wiki/OpenAI_Operator
+Computer Use (Claude),Pro,Agentic AI,-0.08,0.53,Agentic AI,https://en.wikipedia.org/wiki/Claude_(language_model)
+Devin (Cognition),Pro,Agentic AI,0.02,0.42,Agentic AI,https://en.wikipedia.org/wiki/Devin_AI
+Yudkowsky,Contra,X-Risk,-0.72,-0.88,Existential Risk,https://en.wikipedia.org/wiki/Eliezer_Yudkowsky
+PauseAI,Contra,X-Risk,-0.65,-0.78,Existential Risk,https://en.wikipedia.org/wiki/PauseAI
+Hinton,Contra,X-Risk,-0.55,-0.62,Existential Risk,https://en.wikipedia.org/wiki/Geoffrey_Hinton
+Russell,Contra,X-Risk,-0.40,-0.52,Existential Risk,https://en.wikipedia.org/wiki/Stuart_J._Russell
+Gebru,Contra,Present Harms,0.78,-0.65,Present Harms,https://en.wikipedia.org/wiki/Timnit_Gebru
+Bender,Contra,Present Harms,0.62,-0.42,Present Harms,https://en.wikipedia.org/wiki/Emily_M._Bender
+Whittaker,Contra,Present Harms,0.85,-0.72,Present Harms,https://en.wikipedia.org/wiki/Meredith_Whittaker
+Zuboff,Contra,Present Harms,0.82,-0.78,Present Harms,https://en.wikipedia.org/wiki/Shoshana_Zuboff
+Klein,Contra,Present Harms,0.68,-0.55,Present Harms,https://en.wikipedia.org/wiki/Naomi_Klein
+Bengio,Differenziert,Governance,0.28,-0.05,Governance Core,https://en.wikipedia.org/wiki/Yoshua_Bengio
+Intl Safety Report,Differenziert,Governance,0.48,0.12,Governance Core,https://en.wikipedia.org/wiki/International_AI_Safety_Report
+OECD,Differenziert,Governance,0.68,0.02,Governance Core,https://en.wikipedia.org/wiki/OECD
+EU AI Act,Differenziert,Governance,0.92,0.08,Governance Core,https://en.wikipedia.org/wiki/Artificial_Intelligence_Act
+Mistral,Differenziert,Sovereign AI,-0.15,0.28,Sovereign AI,https://en.wikipedia.org/wiki/Mistral_AI
+G42,Differenziert,Sovereign AI,0.15,0.22,Sovereign AI,https://en.wikipedia.org/wiki/G42_(company)
+BharatGen,Differenziert,Sovereign AI,0.35,0.15,Sovereign AI,https://en.wikipedia.org/wiki/Artificial_intelligence_in_India#BharatGen
+Hassabis,Differenziert,AI for Science,0.05,0.82,AI for Science,https://en.wikipedia.org/wiki/Demis_Hassabis
+Baker,Differenziert,AI for Science,0.22,0.85,AI for Science,https://en.wikipedia.org/wiki/David_Baker_(biochemist)
